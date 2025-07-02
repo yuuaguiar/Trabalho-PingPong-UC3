@@ -1,0 +1,157 @@
+<!DOCTYPE html> 
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ping Pong Clássico</title>
+  <style>
+    canvas {
+      background: black;
+      display: block;
+      margin: 0 auto;
+      border: 3px solid white;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const paddleWidth = 10, paddleHeight = 100;
+    let playerY = canvas.height / 2 - paddleHeight / 2;
+    let aiY = canvas.height / 2 - paddleHeight / 2;
+    const paddleSpeed = 8;
+
+    let ballX = canvas.width / 2;
+    let ballY = canvas.height / 2;
+    let ballSpeedX = 5;
+    let ballSpeedY = 4;
+    const ballSize = 10;
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let isBallResetting = false;
+
+    // Estrelas de fundo
+    const stars = Array.from({ length: 100 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: Math.random() * 1.5 + 0.5,
+      alpha: Math.random(),
+      delta: (Math.random() * 0.02) + 0.01
+    }));
+
+    function drawStars() {
+      stars.forEach(star => {
+        star.alpha += star.delta;
+        if (star.alpha <= 0 || star.alpha >= 1) star.delta *= -1;
+
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fill();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp') playerY -= paddleSpeed;
+      else if (e.key === 'ArrowDown') playerY += paddleSpeed;
+    });
+
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawText(text, x, y) {
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText(text, x, y);
+    }
+
+    function resetBall() {
+      ballX = canvas.width / 2;
+      ballY = canvas.height / 2;
+      ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1);
+      ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1);
+      isBallResetting = false;
+    }
+
+    function update() {
+      if (isBallResetting) return;
+
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      if (ballY <= 0 || ballY + ballSize >= canvas.height) {
+        ballSpeedY *= -1;
+      }
+
+      const aiCenter = aiY + paddleHeight / 2;
+      if (aiCenter < ballY) aiY += 3;
+      else aiY -= 3;
+
+      if (
+        ballX <= paddleWidth &&
+        ballY + ballSize >= playerY &&
+        ballY <= playerY + paddleHeight
+      ) {
+        ballSpeedX *= -1;
+      }
+
+      if (
+        ballX + ballSize >= canvas.width - paddleWidth &&
+        ballY + ballSize >= aiY &&
+        ballY <= aiY + paddleHeight
+      ) {
+        ballSpeedX *= -1;
+      }
+
+      if (ballX < 0) {
+        aiScore++;
+        isBallResetting = true;
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+        ballSpeedX = 0;
+        ballSpeedY = 0;
+        setTimeout(resetBall, 2000);
+      } else if (ballX > canvas.width) {
+        playerScore++;
+        isBallResetting = true;
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+        ballSpeedX = 0;
+        ballSpeedY = 0;
+        setTimeout(resetBall, 2000);
+      }
+    }
+
+    function render() {
+      drawRect(0, 0, canvas.width, canvas.height, 'black');
+      drawStars(); // Desenha as estrelas no fundo
+      drawRect(0, playerY, paddleWidth, paddleHeight, 'white');
+      drawRect(canvas.width - paddleWidth, aiY, paddleWidth, paddleHeight, 'white');
+      drawCircle(ballX, ballY, ballSize, 'white');
+      drawText(`Jogador: ${playerScore}`, 20, 20);
+      drawText(`Computador: ${aiScore}`, canvas.width - 150, 20);
+    }
+
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
